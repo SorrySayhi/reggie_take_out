@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.javaitem.reggie.mapper.DishMapper">
+
+    <resultMap id="BaseResultMap" type="com.javaitem.reggie.domain.Dish">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="categoryId" column="category_id" jdbcType="BIGINT"/>
+            <result property="price" column="price" jdbcType="DECIMAL"/>
+            <result property="code" column="code" jdbcType="VARCHAR"/>
+            <result property="image" column="image" jdbcType="VARCHAR"/>
+            <result property="description" column="description" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="sort" column="sort" jdbcType="INTEGER"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="createUser" column="create_user" jdbcType="BIGINT"/>
+            <result property="updateUser" column="update_user" jdbcType="BIGINT"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <resultMap id="DishDtoBaseResultMap" type="com.javaitem.reggie.dto.DishDto">
+        <id property="id" column="dish.id" jdbcType="BIGINT"/>
+        <result property="name" column="dish.name" jdbcType="VARCHAR"/>
+        <result property="categoryId" column="dish.category_id" jdbcType="BIGINT"/>
+        <result property="price" column="dish.price" jdbcType="DECIMAL"/>
+        <result property="code" column="dish.code" jdbcType="VARCHAR"/>
+        <result property="image" column="dish.image" jdbcType="VARCHAR"/>
+        <result property="description" column="dish.description" jdbcType="VARCHAR"/>
+        <result property="status" column="dish.status" jdbcType="INTEGER"/>
+        <result property="sort" column="dish.sort" jdbcType="INTEGER"/>
+        <result property="createTime" column="dish.create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="dish.update_time" jdbcType="TIMESTAMP"/>
+        <result property="createUser" column="dish.create_user" jdbcType="BIGINT"/>
+        <result property="updateUser" column="dish.update_user" jdbcType="BIGINT"/>
+        <result property="isDeleted" column="dish.is_deleted" jdbcType="INTEGER"/>
+        <result property="categoryName" column="category_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="DishDtoBaseResultMap">
+        select dish.id,dish.name,dish.category_id,
+        dish.price,dish.code,dish.image,
+        dish.description,dish.status,dish.sort,
+        dish.create_time,dish.update_time,dish.create_user,
+        dish.update_user,dish.is_deleted,category.name as category_name from dish left join category on dish.category_id = category.id;
+    </select>
+
+
+    <sql id="Base_Column_List">
+        id,name,category_id,
+        price,code,image,
+        description,status,sort,
+        create_time,update_time,create_user,
+        update_user,is_deleted
+    </sql>
+    <update id="updateStatusById">
+update dish
+ set status = #{status,jdbcType=NUMERIC}
+where
+id = #{id,jdbcType=NUMERIC}
+</update>
+    <update id="updateStatusById">
+update dish
+ set status = #{status,jdbcType=NUMERIC}
+where
+id = #{id,jdbcType=NUMERIC}
+</update>
+    <select id="selectAllByCategoryId" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from dish
+        where
+        category_id = #{categoryId,jdbcType=NUMERIC}
+    </select>
+
+
+</mapper>
