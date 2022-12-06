@@ -2,7 +2,7 @@ package com.javaitem.reggie.controller;
 
 import com.reggie.util.CommonResult;
 
-import com.sun.deploy.net.HttpResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;

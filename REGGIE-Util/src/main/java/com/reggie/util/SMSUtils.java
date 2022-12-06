@@ -32,7 +32,7 @@ public class SMSUtils {
         // 初始化 Client，采用 AK&SK 鉴权访问的方式，此方式可能会存在泄漏风险，建议使用 STS 方式。鉴权访问方式请参考：https://help.aliyun.com/document_detail/378657.html
         // 获取 AK 链接：https://usercenter.console.aliyun.com
         String s = ValidateCodeUtils.generateValidateCode(4).toString();
-//        com.aliyun.dysmsapi20170525.Client client = SMSUtils.createClient("LTAI5t6QU94wMrpZHCpZrGR8", "3UblgboNYXUSfIIHnOycf2Wyddh7OT");
+
 //        com.aliyun.dysmsapi20170525.models.SendSmsRequest sendSmsRequest = new com.aliyun.dysmsapi20170525.models.SendSmsRequest()
 //                .setSignName("阿里云短信测试")
 //                .setTemplateCode("SMS_154950909")
