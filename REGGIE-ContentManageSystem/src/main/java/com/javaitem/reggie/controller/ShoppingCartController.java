@@ -7,6 +7,7 @@ import com.reggie.util.CommonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,9 @@ public class ShoppingCartController {
 
     @Autowired
     private ShoppingCartService shoppingCartService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @GetMapping("/list")
     public CommonResult<List> getList(){

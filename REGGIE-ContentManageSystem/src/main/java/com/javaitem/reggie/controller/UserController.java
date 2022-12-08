@@ -8,10 +8,12 @@ import com.reggie.util.SMSUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.omg.CORBA.COMM_FAILURE;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author win
@@ -25,13 +27,18 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
 
     @PostMapping("/login")
     public CommonResult<User> login(HttpServletRequest request, @RequestBody Map map){
-        String sms = (String)request.getSession().getAttribute("SMS");
         String phone = (String)map.get("phone");
+        String sms = (String) redisTemplate.opsForValue().get(phone);
         String code = (String)map.get("code");
-        log.info(sms);
+        if (sms==null){
+            return CommonResult.error("验证码过期");
+        }
         if (sms.equals(code)){LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(User::getPhone,phone);
             User user = null;
@@ -48,8 +55,7 @@ public class UserController {
                 return CommonResult.error("账号被禁用");
             }
             Long id = user.getId();
-
-            request.getSession().removeAttribute("SMS");
+            redisTemplate.delete(phone);
             request.getSession().setAttribute("user",id);
 
 
@@ -67,7 +73,7 @@ public class UserController {
         try {
             String s = SMSUtils.sendMessage();
             log.info(s);
-            request.getSession().setAttribute("SMS",s);
+            redisTemplate.opsForValue().set(phone,s!=null?s:"",60, TimeUnit.SECONDS);
 
         } catch (Exception e) {
             e.printStackTrace();

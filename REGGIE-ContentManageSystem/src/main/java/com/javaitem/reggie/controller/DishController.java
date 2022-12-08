@@ -18,12 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +49,9 @@ public class DishController {
 
     @Autowired
     private SetmealDishService setmealDishService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @GetMapping("/page")
     public CommonResult<Page>  pageCommonResult(int page,int pageSize,@RequestParam(required = false)String name){
@@ -99,15 +105,24 @@ public class DishController {
             return CommonResult.error("失败");
 
         }
+        String dishRedisKey = "dish_"+dishDto.getCategoryId()+dishDto.getStatus();
+        redisTemplate.delete(dishRedisKey);
         return CommonResult.success(null);
     }
     @DeleteMapping()
     public CommonResult<Dish> deleteDish(String ids){
+
         String[] split = ids.split(",");
         List<Long> collect = Arrays.stream(split).map(Long::parseLong).collect(Collectors.toList());
-
+        List<Long> badId =new ArrayList<>();
         for (Long id:collect
              ) {
+            Dish dish = dishService.getById(id);
+            Integer status = dish.getStatus();
+            if (status==1){
+                badId.add(id);
+                continue;
+            }
             LambdaQueryWrapper<SetmealDish> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(SetmealDish::getDishId,id);
             long count = setmealDishService.count(queryWrapper);
@@ -115,14 +130,23 @@ public class DishController {
                 return CommonResult.error("请先删除包含"+id+"的套餐");
             }
         }
+        if (!badId.isEmpty()){
+            collect.removeAll(badId);
+            if (collect.isEmpty()){
+                return CommonResult.error("无可删除菜品");
+            }
+        }
+
         boolean b = dishService.removeBatchByIds(collect);
         for (Long id:collect){
             LambdaQueryWrapper<DishFlavor> dishFlavorLambdaQueryWrapper = new LambdaQueryWrapper<>();
             dishFlavorLambdaQueryWrapper.eq(DishFlavor::getDishId,id);
             dishFlavorService.remove(dishFlavorLambdaQueryWrapper);
         }
-
         if (b){
+            if (badId!=null){
+                return CommonResult.error("部分删除失败");
+            }
             return CommonResult.success(null);
         }else {
             return CommonResult.error("失败");
@@ -138,12 +162,22 @@ public class DishController {
              ) {
             dishService.updateStatusById(status,id);
         }
+        Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);
+
         return CommonResult.success(null);
     }
 
     @GetMapping("/list")
     public CommonResult<List> dishList(HttpServletRequest request,Dish dish){
+        String categoryId =dish.getCategoryId().toString();
+        String dishRedisKey = "dish_"+categoryId+dish.getStatus();
 
+        Boolean aBoolean = redisTemplate.hasKey(dishRedisKey);
+        if (aBoolean){
+            List range = redisTemplate.opsForList().range(dishRedisKey, 0, -1);
+            return CommonResult.success(range);
+        }
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(StringUtils.isNotEmpty(dish.getName()),Dish::getName,dish.getName()).eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId()).eq(Dish::getStatus,1);
         List<Dish> list = dishService.list(queryWrapper);
@@ -163,6 +197,8 @@ public class DishController {
             if (collect==null){
                 CommonResult.error("未找到");
             }
+            redisTemplate.opsForList().leftPushAll(dishRedisKey,collect.toArray());
+
             return CommonResult.success(collect);
         }
         if (list==null){
@@ -182,6 +218,9 @@ public class DishController {
         dishService.updateById(dishDto);
         dishFlavorService.deleteByDishId(dishDto.getId());
         dishFlavorService.saveBatch(flavors);
+        String dishRedisKey = "dish_"+dishDto.getCategoryId()+dishDto.getStatus();
+
+        redisTemplate.delete(dishRedisKey);
         return CommonResult.success(null);
     }
 }
